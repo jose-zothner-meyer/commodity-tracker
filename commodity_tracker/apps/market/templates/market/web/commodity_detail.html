@@ -1,122 +1,213 @@
 {% extends "market/web/base_web.html" %}
 
-{% block extra_head %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
-{% endblock extra_head %}
-
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">{{ page_title }}</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{% url 'market-web:commodity-list' %}" class="btn btn-sm btn-outline-secondary me-2">
-            &laquo; Back to List
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">{{ commodity.name }} ({{ commodity.symbol }})</h1>
+        <a href="{% url 'market-web:commodity-list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
         </a>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-3">
-            <div class="card-header"><strong>Commodity Details</strong></div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item"><strong>Symbol:</strong> {{ commodity.symbol }}</li>
-                <li class="list-group-item"><strong>Category:</strong> {{ commodity.category.name|default:"N/A" }}</li>
-                <li class="list-group-item"><strong>Exchange:</strong> {{ commodity.exchange|default:"N/A" }}</li>
-                <li class="list-group-item"><strong>Unit:</strong> {{ commodity.unit|default:"N/A" }}</li>
-                <li class="list-group-item"><strong>Currency:</strong> {{ commodity.currency }}</li>
-                <li class="list-group-item"><strong>Data Source:</strong> <a href="{% url 'market-web:datasource-detail' pk=commodity.data_source.id %}">{{ commodity.data_source.name }}</a></li>
-                <li class="list-group-item"><strong>External ID:</strong> {{ commodity.external_id }}</li>
-                <li class="list-group-item"><strong>Status:</strong> {% if commodity.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</li>
-                <li class="list-group-item"><strong>Meta Data:</strong> <pre>{{ commodity.meta_data|default:"{}" }}</pre></li>
-            </ul>
+    <!-- Commodity Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Commodity Information</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Symbol</dt>
+                        <dd class="col-sm-8">{{ commodity.symbol }}</dd>
+
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">{{ commodity.category.name }}</dd>
+
+                        <dt class="col-sm-4">Exchange</dt>
+                        <dd class="col-sm-8">{{ commodity.exchange|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-4">Unit</dt>
+                        <dd class="col-sm-8">{{ commodity.unit|default:"N/A" }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Currency</dt>
+                        <dd class="col-sm-8">{{ commodity.currency|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-4">Data Source</dt>
+                        <dd class="col-sm-8">
+                            <a href="{% url 'market-web:datasource-detail' pk=commodity.data_source.id %}">
+                                {{ commodity.data_source.name }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-4">External ID</dt>
+                        <dd class="col-sm-8">{{ commodity.external_id|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            {% if commodity.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <div class="card mb-3">
-            <div class="card-header"><strong>Latest Price Data</strong></div>
-            {% with latest_price=commodity.get_latest_price %}
-                {% if latest_price %}
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>Timestamp:</strong> {{ latest_price.timestamp|date:"Y-m-d H:i:s T" }}</li>
-                    <li class="list-group-item"><strong>Open:</strong> {{ latest_price.open_price|default:"N/A" }}</li>
-                    <li class="list-group-item"><strong>High:</strong> {{ latest_price.high_price|default:"N/A" }}</li>
-                    <li class="list-group-item"><strong>Low:</strong> {{ latest_price.low_price|default:"N/A" }}</li>
-                    <li class="list-group-item"><strong>Close:</strong> {{ latest_price.close_price|default:"N/A" }}</li>
-                    <li class="list-group-item"><strong>Volume:</strong> {{ latest_price.volume|default:"N/A" }}</li>
-                    <li class="list-group-item"><strong>Change:</strong> {{ latest_price.price_change|floatformat:4|default:"N/A" }}</li>
-                    <li class="list-group-item"><strong>% Change:</strong> {{ latest_price.price_change_percentage|floatformat:2|default:"N/A" }}%</li>
-                </ul>
-                {% else %}
-                    <div class="card-body">
-                        <p class="text-muted">No price data available yet for this commodity.</p>
+
+    <!-- Latest Price -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Latest Price</h2>
+        </div>
+        <div class="card-body">
+            {% if latest_price %}
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Timestamp</label>
+                        <div>{{ latest_price.timestamp|date:"Y-m-d H:i:s" }}</div>
                     </div>
-                {% endif %}
-            {% endwith %}
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Open</label>
+                        <div>{{ latest_price.open_price }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">High</label>
+                        <div>{{ latest_price.high_price }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Low</label>
+                        <div>{{ latest_price.low_price }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Close</label>
+                        <div>{{ latest_price.close_price }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Volume</label>
+                        <div>{{ latest_price.volume|default:"N/A" }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Change</label>
+                        <div class="{% if latest_price.price_change > 0 %}text-success{% elif latest_price.price_change < 0 %}text-danger{% endif %}">
+                            {{ latest_price.price_change|default:"N/A" }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">% Change</label>
+                        <div class="{% if latest_price.percent_change > 0 %}text-success{% elif latest_price.percent_change < 0 %}text-danger{% endif %}">
+                            {{ latest_price.percent_change|default:"N/A" }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                No price data available for this commodity.
+            </div>
+            {% endif %}
         </div>
     </div>
-</div>
 
-<div class="row mt-3">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <strong>Price History (Last {{ price_history_days }} Days - Close Price)</strong>
-                <form method="get" class="float-end d-inline-flex align-items-center">
-                    <label for="days" class="form-label me-2">Days:</label>
-                    <input type="number" name="days" id="days" value="{{ price_history_days }}" class="form-control form-control-sm" style="width: 80px;" min="1" max="1825">
-                    <button type="submit" class="btn btn-sm btn-primary ms-2">Update</button>
+    <!-- Price History -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Price History</h2>
+                <form method="get" class="d-flex align-items-center">
+                    <label for="days" class="me-2">Show last</label>
+                    <select name="days" id="days" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                        <option value="7" {% if price_history_days == 7 %}selected{% endif %}>7 days</option>
+                        <option value="30" {% if price_history_days == 30 %}selected{% endif %}>30 days</option>
+                        <option value="90" {% if price_history_days == 90 %}selected{% endif %}>90 days</option>
+                        <option value="180" {% if price_history_days == 180 %}selected{% endif %}>180 days</option>
+                        <option value="365" {% if price_history_days == 365 %}selected{% endif %}>1 year</option>
+                    </select>
                 </form>
             </div>
-            <div class="card-body chart-container">
-                {% if price_history and chart_labels and chart_data_close %}
-                    <canvas id="priceHistoryChart"></canvas>
-                {% else %}
-                    <p class="text-muted">No recent price history available to display chart.</p>
-                {% endif %}
+        </div>
+        <div class="card-body">
+            {% if price_history %}
+            <div class="chart-container" style="position: relative; height:400px;">
+                <canvas id="priceChart"></canvas>
             </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                No price history available for the selected period.
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-{% endblock content %}
+{% endblock %}
 
-{% block extra_scripts %}
-{% if price_history and chart_labels and chart_data_close %}
+{% block extra_js %}
+{% if price_history %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
-        const priceHistoryChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: {{ chart_labels|safe }},
-                datasets: [{
-                    label: 'Close Price ({{ commodity.currency }})',
-                    data: {{ chart_data_close|safe }},
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.1,
-                    fill: true
-                }]
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const chartData = {{ chart_data|safe }};
+    
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Price History'
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: { display: true, text: 'Date' },
-                        ticks: { autoSkip: true, maxTicksLimit: 15 }
-                    },
-                    y: {
-                        title: { display: true, text: 'Price ({{ commodity.currency }})' },
-                        beginAtZero: false
-                    }
-                },
-                plugins: {
-                    tooltip: { mode: 'index', intersect: false },
-                    legend: { display: true, position: 'top' }
+            tooltip: {
+                mode: 'index',
+                intersect: false
+            }
+        },
+        scales: {
+            x: {
+                display: true,
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            },
+            y: {
+                display: true,
+                title: {
+                    display: true,
+                    text: 'Price'
                 }
             }
-        });
+        }
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: chartOptions
     });
+});
 </script>
 {% endif %}
-{% endblock extra_scripts %} 
+{% endblock %} 

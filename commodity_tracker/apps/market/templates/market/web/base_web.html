@@ -11,10 +11,22 @@
         .footer { padding: 20px 0; text-align: center; margin-top: 40px; background-color: #f8f9fa; }
         .table th, .table td { vertical-align: middle; }
         .chart-container { max-width: 900px; margin: auto; }
+        #loading-indicator { 
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
     </style>
     {% block extra_head %}{% endblock extra_head %}
 </head>
 <body>
+    {% csrf_token %}
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'market-web:commodity-list' %}">Commodity Tracker</a>
@@ -46,10 +58,23 @@
     </nav>
 
     <main class="container mt-4">
+        {% if error_message %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ error_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
         {% block content %}
         <p>Welcome to the Commodity Tracker. Select an option from the navigation.</p>
         {% endblock content %}
     </main>
+
+    <div id="loading-indicator" class="d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
 
     <footer class="footer">
         <div class="container">
@@ -58,6 +83,26 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global loading indicator functions
+        function showLoading() {
+            document.getElementById('loading-indicator').classList.remove('d-none');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-indicator').classList.add('d-none');
+        }
+
+        // Add loading indicator to all form submissions
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function() {
+                    showLoading();
+                });
+            });
+        });
+    </script>
     {% block extra_scripts %}{% endblock extra_scripts %}
 </body>
 </html> 
