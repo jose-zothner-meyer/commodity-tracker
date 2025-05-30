@@ -1,5 +1,9 @@
 {% extends "market/web/base_web.html" %}
 
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -22,7 +26,7 @@
                         <dd class="col-sm-8">{{ commodity.symbol }}</dd>
 
                         <dt class="col-sm-4">Category</dt>
-                        <dd class="col-sm-8">{{ commodity.category.name }}</dd>
+                        <dd class="col-sm-8">{{ commodity.category.name|default:"N/A" }}</dd>
 
                         <dt class="col-sm-4">Exchange</dt>
                         <dd class="col-sm-8">{{ commodity.exchange|default:"N/A" }}</dd>
@@ -38,9 +42,13 @@
 
                         <dt class="col-sm-4">Data Source</dt>
                         <dd class="col-sm-8">
+                            {% if commodity.data_source %}
                             <a href="{% url 'market-web:datasource-detail' pk=commodity.data_source.id %}">
                                 {{ commodity.data_source.name }}
                             </a>
+                            {% else %}
+                            N/A
+                            {% endif %}
                         </dd>
 
                         <dt class="col-sm-4">External ID</dt>
@@ -77,19 +85,19 @@
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label text-muted">Open</label>
-                        <div>{{ latest_price.open_price }}</div>
+                        <div>{{ latest_price.open_price|floatformat:2|default:"N/A" }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label text-muted">High</label>
-                        <div>{{ latest_price.high_price }}</div>
+                        <div>{{ latest_price.high_price|floatformat:2|default:"N/A" }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label text-muted">Low</label>
-                        <div>{{ latest_price.low_price }}</div>
+                        <div>{{ latest_price.low_price|floatformat:2|default:"N/A" }}</div>
                     </div>
                 </div>
             </div>
@@ -97,20 +105,24 @@
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label text-muted">Close</label>
-                        <div>{{ latest_price.close_price }}</div>
+                        <div>{{ latest_price.close_price|floatformat:2|default:"N/A" }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label text-muted">Volume</label>
-                        <div>{{ latest_price.volume|default:"N/A" }}</div>
+                        <div>{{ latest_price.volume|floatformat:0|default:"N/A" }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label text-muted">Change</label>
                         <div class="{% if latest_price.price_change > 0 %}text-success{% elif latest_price.price_change < 0 %}text-danger{% endif %}">
-                            {{ latest_price.price_change|default:"N/A" }}
+                            {% if latest_price.price_change %}
+                            {{ latest_price.price_change|floatformat:2 }}
+                            {% else %}
+                            N/A
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -118,7 +130,11 @@
                     <div class="mb-3">
                         <label class="form-label text-muted">% Change</label>
                         <div class="{% if latest_price.percent_change > 0 %}text-success{% elif latest_price.percent_change < 0 %}text-danger{% endif %}">
-                            {{ latest_price.percent_change|default:"N/A" }}%
+                            {% if latest_price.percent_change %}
+                            {{ latest_price.percent_change|floatformat:2 }}%
+                            {% else %}
+                            N/A
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -151,7 +167,7 @@
         <div class="card-body">
             {% if price_history %}
             <div class="chart-container" style="position: relative; height:400px;">
-                <canvas id="priceChart"></canvas>
+                <canvas id="priceChart" role="img" aria-label="Price history chart for {{ commodity.name }}"></canvas>
             </div>
             {% else %}
             <div class="alert alert-info mb-0">
@@ -163,13 +179,31 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 {% if price_history %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('priceChart').getContext('2d');
-    const chartData = {{ chart_data|safe }};
+    const ctx = document.getElementById('priceChart');
+    if (!ctx) {
+        console.error('Chart canvas element not found');
+        return;
+    }
+
+    const chartContext = ctx.getContext('2d');
+    let chartData;
+    
+    try {
+        chartData = {{ chart_data|safe }};
+    } catch (error) {
+        console.error('Error parsing chart data:', error);
+        return;
+    }
+
+    if (!chartData || !chartData.datasets || chartData.datasets.length === 0) {
+        console.error('Invalid chart data provided');
+        return;
+    }
     
     const chartOptions = {
         responsive: true,
@@ -177,11 +211,30 @@ document.addEventListener('DOMContentLoaded', function() {
         plugins: {
             title: {
                 display: true,
-                text: 'Price History'
+                text: 'Price History - {{ commodity.name|escapejs }}'
             },
             tooltip: {
                 mode: 'index',
-                intersect: false
+                intersect: false,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: '{{ commodity.currency|default:"USD"|escapejs }}'
+                            }).format(context.parsed.y);
+                        }
+                        return label;
+                    }
+                }
+            },
+            legend: {
+                display: true,
+                position: 'top'
             }
         },
         scales: {
@@ -190,24 +243,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 title: {
                     display: true,
                     text: 'Date'
+                },
+                type: 'time',
+                time: {
+                    displayFormats: {
+                        day: 'MMM DD',
+                        week: 'MMM DD',
+                        month: 'MMM YYYY'
+                    }
                 }
             },
             y: {
                 display: true,
                 title: {
                     display: true,
-                    text: 'Price'
-                }
+                    text: 'Price ({{ commodity.currency|default:"USD"|escapejs }})'
+                },
+                beginAtZero: false
             }
+        },
+        interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
         }
     };
     
-    new Chart(ctx, {
-        type: 'line',
-        data: chartData,
-        options: chartOptions
-    });
+    try {
+        new Chart(chartContext, {
+            type: 'line',
+            data: chartData,
+            options: chartOptions
+        });
+    } catch (error) {
+        console.error('Error creating chart:', error);
+        const chartContainer = document.querySelector('.chart-container');
+        if (chartContainer) {
+            chartContainer.innerHTML = '<div class="alert alert-warning">Error loading chart. Please try refreshing the page.</div>';
+        }
+    }
 });
 </script>
 {% endif %}
-{% endblock %} 
+{% endblock %}
