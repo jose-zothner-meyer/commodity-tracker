@@ -1,0 +1,52 @@
+{% extends "market/web/base_web.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ page_title }}</h1>
+</div>
+
+{% if commodities %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Symbol</th>
+                    <th>Category</th>
+                    <th>Exchange</th>
+                    <th>Data Source</th>
+                    <th>Latest Price (Close)</th>
+                    <th>Last Price Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for commodity in commodities %}
+                <tr>
+                    <td><a href="{% url 'market-web:commodity-detail' pk=commodity.id %}">{{ commodity.name }}</a></td>
+                    <td>{{ commodity.symbol }}</td>
+                    <td>{{ commodity.category.name|default:"N/A" }}</td>
+                    <td>{{ commodity.exchange|default:"N/A" }}</td>
+                    <td>{{ commodity.data_source.name }}</td>
+                    <td>
+                        {% with latest_price=commodity.get_latest_price %}
+                            {{ latest_price.close_price|default:"N/A" }} {{ commodity.currency }}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% with latest_price=commodity.get_latest_price %}
+                            {{ latest_price.timestamp|date:"Y-m-d H:i"|default:"N/A" }}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include "market/web/includes/pagination.html" %}
+{% else %}
+    <div class="alert alert-info" role="alert">
+        No active commodities found. You can add them via the <a href="{% url 'admin:market_commodity_add' %}" class="alert-link">admin panel</a>.
+    </div>
+{% endif %}
+{% endblock content %} 

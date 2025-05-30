@@ -1,0 +1,88 @@
+{% extends "market/web/base_web.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ page_title }}</h1>
+    <a href="{% url 'market-web:datasource-list' %}" class="btn btn-secondary">Back to List</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Data Source Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{ datasource.name }}</dd>
+
+                    <dt class="col-sm-4">Base URL</dt>
+                    <dd class="col-sm-8">{{ datasource.base_url }}</dd>
+
+                    <dt class="col-sm-4">API Key Required</dt>
+                    <dd class="col-sm-8">{% if datasource.api_key_required %}Yes{% else %}No{% endif %}</dd>
+
+                    <dt class="col-sm-4">Rate Limit</dt>
+                    <dd class="col-sm-8">{{ datasource.rate_limit_per_minute|default:"N/A" }} per minute</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        {% if datasource.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Created</dt>
+                    <dd class="col-sm-8">{{ datasource.created_at|date:"Y-m-d H:i" }}</dd>
+
+                    <dt class="col-sm-4">Last Updated</dt>
+                    <dd class="col-sm-8">{{ datasource.updated_at|date:"Y-m-d H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Associated Commodities</h5>
+            </div>
+            <div class="card-body">
+                {% if commodities %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Symbol</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for commodity in commodities %}
+                                <tr>
+                                    <td><a href="{% url 'market-web:commodity-detail' pk=commodity.id %}">{{ commodity.name }}</a></td>
+                                    <td>{{ commodity.symbol }}</td>
+                                    <td>
+                                        {% if commodity.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No commodities associated with this data source.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %} 

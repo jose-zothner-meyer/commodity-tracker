@@ -1,2 +1,0 @@
-# commodity-tracker
-Tracker
